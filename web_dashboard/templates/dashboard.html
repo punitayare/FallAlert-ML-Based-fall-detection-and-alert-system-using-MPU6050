@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Fall Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-heartbeat"></i>
+                <span>Fall Detection System</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/devices"><i class="fas fa-microchip"></i> Devices</a></li>
+                <li><a href="/monitoring"><i class="fas fa-desktop"></i> Monitoring</a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Welcome Header -->
+        <div class="page-header">
+            <div>
+                <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
+                <p class="subtitle">Welcome back, <span class="welcome-user" id="userName">User</span>! Monitor your devices in real-time</p>
+            </div>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalDevices">0</h3>
+                    <p>Total Devices</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-plug"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="onlineDevices">0</h3>
+                    <p>Online Devices</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalAlerts">0</h3>
+                    <p>Fall Alerts (24h)</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="fas fa-battery-half"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="avgBattery">--</h3>
+                    <p>Average Battery</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <!-- Device Status Chart -->
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Device Status</h3>
+                <div class="chart-container">
+                    <canvas id="deviceStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Battery Levels Chart -->
+            <div class="chart-card">
+                <h3><i class="fas fa-battery-three-quarters"></i> Battery Levels</h3>
+                <div class="chart-container">
+                    <canvas id="batteryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Timeline Chart -->
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> Activity Timeline (Last 24h)</h3>
+                <div class="chart-container">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Fall Events Chart -->
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-bar"></i> Fall Events (Last 7 Days)</h3>
+                <div class="chart-container">
+                    <canvas id="fallEventsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Overview Table -->
+        <div class="devices-section">
+            <h3><i class="fas fa-list"></i> Devices Overview</h3>
+            <div id="devicesTableContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading devices...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="activity-section">
+            <h3><i class="fas fa-history"></i> Recent Activity</h3>
+            <div id="activityListContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading activity...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

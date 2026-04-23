@@ -1,0 +1,8 @@
+# HTTP Requests
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# Random data generation
+numpy==1.26.2

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Fall Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">
+                    <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="25" cy="25" r="23" stroke="#4F46E5" stroke-width="3"/>
+                        <path d="M25 15L25 35M15 25L35 25" stroke="#4F46E5" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h1>Fall Detection System</h1>
+                <p class="subtitle">Sign in to your account</p>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="you@example.com" autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="••••••••" autocomplete="current-password">
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember" name="remember">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="#" class="forgot-password">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <span class="btn-text">Sign In</span>
+                    <span class="btn-loader" style="display: none;">
+                        <div class="spinner"></div>
+                    </span>
+                </button>
+
+                <div class="alert alert-error" id="errorAlert" style="display: none;">
+                    <span id="errorMessage"></span>
+                </div>
+
+                <div class="alert alert-success" id="successAlert" style="display: none;">
+                    <span id="successMessage"></span>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="/register">Sign up</a></p>
+            </div>
+        </div>
+
+        <div class="auth-info">
+            <div class="info-content">
+                <h2>Welcome Back!</h2>
+                <p>Monitor your fall detection devices in real-time</p>
+                <ul class="feature-list">
+                    <li>📊 Real-time sensor monitoring</li>
+                    <li>🔔 Instant fall alerts</li>
+                    <li>📱 Device management</li>
+                    <li>📈 Historical data analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    
+    <!-- Login Script -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

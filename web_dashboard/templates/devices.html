@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Management - Fall Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/devices.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-heartbeat"></i>
+                <span>Fall Detection System</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/devices" class="active"><i class="fas fa-microchip"></i> Devices</a></li>
+                <li><a href="/monitoring"><i class="fas fa-desktop"></i> Monitoring</a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Header Section -->
+        <div class="page-header">
+            <div>
+                <h1><i class="fas fa-microchip"></i> Device Management</h1>
+                <p class="subtitle">Create, pair, and manage your virtual fall detection devices</p>
+            </div>
+            <button class="btn btn-primary" id="createDeviceBtn">
+                <i class="fas fa-plus"></i> Create New Device
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalDevices">0</h3>
+                    <p>Total Devices</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="onlineDevices">0</h3>
+                    <p>Online Now</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-link"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="pairedDevices">0</h3>
+                    <p>Paired</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon red">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="unpairedDevices">0</h3>
+                    <p>Unpaired</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices List -->
+        <div class="devices-section">
+            <div class="section-header">
+                <h2><i class="fas fa-list"></i> Your Devices</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="online">Online</button>
+                    <button class="filter-btn" data-filter="paired">Paired</button>
+                    <button class="filter-btn" data-filter="unpaired">Unpaired</button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingDevices" class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading devices...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-microchip"></i>
+                <h3>No Devices Yet</h3>
+                <p>Create your first virtual device to get started with fall detection monitoring</p>
+                <button class="btn btn-primary" onclick="document.getElementById('createDeviceBtn').click()">
+                    <i class="fas fa-plus"></i> Create Device
+                </button>
+            </div>
+
+            <!-- Devices Grid -->
+            <div id="devicesGrid" class="devices-grid" style="display: none;">
+                <!-- Devices will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Device Modal -->
+    <div id="createDeviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Create New Virtual Device</h2>
+                <button class="close-btn" onclick="closeCreateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createDeviceForm">
+                <div class="form-group">
+                    <label for="deviceName">Device Name</label>
+                    <input type="text" id="deviceName" placeholder="e.g., Grandma's Watch" required>
+                </div>
+                <div class="form-group">
+                    <label for="deviceLocation">Location (Optional)</label>
+                    <input type="text" id="deviceLocation" placeholder="e.g., Living Room">
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>A 6-digit pairing code will be generated. You can use this code in the mobile app to pair the device.</p>
+                </div>
+                <div id="createError" class="error-message" style="display: none;"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="createSubmitBtn">
+                        <i class="fas fa-plus"></i> Create Device
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pairing Code Modal -->
+    <div id="pairingModal" class="modal">
+        <div class="modal-content pairing-modal">
+            <div class="modal-header success">
+                <i class="fas fa-check-circle"></i>
+                <h2>Device Created Successfully!</h2>
+            </div>
+            <div class="pairing-code-display">
+                <p>Your 6-Digit Pairing Code:</p>
+                <div class="pairing-code" id="pairingCodeDisplay">------</div>
+                <button class="btn-copy" onclick="copyPairingCode()">
+                    <i class="fas fa-copy"></i> Copy Code
+                </button>
+            </div>
+            <div class="pairing-instructions">
+                <h3>Next Steps:</h3>
+                <ol>
+                    <li>Open the mobile app on your phone</li>
+                    <li>Go to "Pair Device"</li>
+                    <li>Enter this 6-digit code</li>
+                    <li>Device will be linked to your account</li>
+                </ol>
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock"></i>
+                    <p>This code will expire in <strong>15 minutes</strong></p>
+                </div>
+            </div>
+            <div class="device-info">
+                <p><strong>Device ID:</strong> <span id="newDeviceId">-</span></p>
+                <p><strong>Created:</strong> <span id="newDeviceTime">-</span></p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="closePairingModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Details Modal -->
+    <div id="deviceDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Device Details</h2>
+                <button class="close-btn" onclick="closeDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="deviceDetailsContent">
+                <!-- Device details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/devices.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Monitoring - Fall Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <style>
+        .sensor-readings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .sensor-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .sensor-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .sensor-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .device-selector {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .device-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #22543d;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="dashboard-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-heartbeat"></i>
+                <span>Fall Detection System</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/devices"><i class="fas fa-microchip"></i> Devices</a></li>
+                <li><a href="/monitoring" class="active"><i class="fas fa-desktop"></i> Monitoring</a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1><i class="fas fa-desktop"></i> Real-time Monitoring</h1>
+                    <p class="subtitle">Live sensor data from your devices</p>
+                </div>
+                <div class="live-indicator" id="liveIndicator">
+                    <div class="live-dot"></div>
+                    <span>LIVE</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Selector -->
+        <div class="device-selector">
+            <label for="deviceSelect" style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--dark);">
+                Select Device to Monitor:
+            </label>
+            <select id="deviceSelect">
+                <option value="">Loading devices...</option>
+            </select>
+        </div>
+
+        <!-- Sensor Readings -->
+        <div class="sensor-readings">
+            <div class="sensor-card">
+                <div class="sensor-label">Accel X</div>
+                <div class="sensor-value" id="accelX">0.00</div>
+                <small>m/s²</small>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-label">Accel Y</div>
+                <div class="sensor-value" id="accelY">0.00</div>
+                <small>m/s²</small>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-label">Accel Z</div>
+                <div class="sensor-value" id="accelZ">9.81</div>
+                <small>m/s²</small>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-label">Gyro X</div>
+                <div class="sensor-value" id="gyroX">0.00</div>
+                <small>°/s</small>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-label">Gyro Y</div>
+                <div class="sensor-value" id="gyroY">0.00</div>
+                <small>°/s</small>
+            </div>
+            <div class="sensor-card">
+                <div class="sensor-label">Gyro Z</div>
+                <div class="sensor-value" id="gyroZ">0.00</div>
+                <small>°/s</small>
+            </div>
+        </div>
+
+        <!-- Real-time Charts -->
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> Accelerometer (Real-time)</h3>
+                <div class="chart-container">
+                    <canvas id="accelChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-line"></i> Gyroscope (Real-time)</h3>
+                <div class="chart-container">
+                    <canvas id="gyroChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let socket = null;
+        let selectedDeviceId = null;
+        let accelChart, gyroChart;
+        const maxDataPoints = 50;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUser = await fallDetection.checkAuthState();
+            
+            if (!currentUser) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Setup logout
+            document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+                e.preventDefault();
+                await fallDetection.signOut();
+                window.location.href = '/login';
+            });
+            
+            // Initialize WebSocket
+            initializeWebSocket();
+            
+            // Load devices
+            await loadDevices();
+            
+            // Initialize charts
+            initializeCharts();
+        });
+
+        async function loadDevices() {
+            try {
+                const token = await fallDetection.getUserToken();
+                const response = await fetch(`/api/devices?user_id=${currentUser.uid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                const select = document.getElementById('deviceSelect');
+                
+                if (data.success && data.devices.length > 0) {
+                    select.innerHTML = '<option value="">-- Select a device --</option>';
+                    data.devices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.textContent = `${device.name || device.deviceId} (${device.status})`;
+                        select.appendChild(option);
+                    });
+                    
+                    select.addEventListener('change', (e) => {
+                        if (e.target.value) {
+                            monitorDevice(e.target.value);
+                        }
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No devices available</option>';
+                }
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        function monitorDevice(deviceId) {
+            selectedDeviceId = deviceId;
+            
+            // Leave previous room if any
+            if (socket && socket.connected) {
+                socket.emit('leave_device', { deviceId: selectedDeviceId });
+            }
+            
+            // Join new device room
+            socket.emit('join_device', { deviceId: deviceId });
+            console.log(`📱 Now monitoring: ${deviceId}`);
+        }
+
+        function initializeWebSocket() {
+            socket = io({
+                transports: ['websocket', 'polling']
+            });
+            
+            socket.on('connect', () => {
+                console.log('✓ WebSocket connected');
+                document.getElementById('liveIndicator').style.display = 'inline-flex';
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('⚠️  WebSocket disconnected');
+                document.getElementById('liveIndicator').style.display = 'none';
+            });
+            
+            socket.on('sensor_data', (data) => {
+                updateSensorReadings(data);
+            });
+        }
+
+        function updateSensorReadings(data) {
+            const accel = data.accelerometer || {};
+            const gyro = data.gyroscope || {};
+            
+            // Update sensor cards
+            document.getElementById('accelX').textContent = (accel.x || 0).toFixed(2);
+            document.getElementById('accelY').textContent = (accel.y || 0).toFixed(2);
+            document.getElementById('accelZ').textContent = (accel.z || 0).toFixed(2);
+            document.getElementById('gyroX').textContent = (gyro.x || 0).toFixed(2);
+            document.getElementById('gyroY').textContent = (gyro.y || 0).toFixed(2);
+            document.getElementById('gyroZ').textContent = (gyro.z || 0).toFixed(2);
+            
+            // Update charts
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Accelerometer chart
+            if (accelChart) {
+                accelChart.data.labels.push(timestamp);
+                accelChart.data.datasets[0].data.push(accel.x || 0);
+                accelChart.data.datasets[1].data.push(accel.y || 0);
+                accelChart.data.datasets[2].data.push(accel.z || 0);
+                
+                // Keep only last 50 points
+                if (accelChart.data.labels.length > maxDataPoints) {
+                    accelChart.data.labels.shift();
+                    accelChart.data.datasets.forEach(ds => ds.data.shift());
+                }
+                
+                accelChart.update('none');
+            }
+            
+            // Gyroscope chart
+            if (gyroChart) {
+                gyroChart.data.labels.push(timestamp);
+                gyroChart.data.datasets[0].data.push(gyro.x || 0);
+                gyroChart.data.datasets[1].data.push(gyro.y || 0);
+                gyroChart.data.datasets[2].data.push(gyro.z || 0);
+                
+                if (gyroChart.data.labels.length > maxDataPoints) {
+                    gyroChart.data.labels.shift();
+                    gyroChart.data.datasets.forEach(ds => ds.data.shift());
+                }
+                
+                gyroChart.update('none');
+            }
+        }
+
+        function initializeCharts() {
+            // Accelerometer Chart
+            const accelCtx = document.getElementById('accelChart');
+            accelChart = new Chart(accelCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'X-axis',
+                            data: [],
+                            borderColor: '#f56565',
+                            backgroundColor: 'rgba(245, 101, 101, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Y-axis',
+                            data: [],
+                            borderColor: '#48bb78',
+                            backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Z-axis',
+                            data: [],
+                            borderColor: '#4299e1',
+                            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+            // Gyroscope Chart
+            const gyroCtx = document.getElementById('gyroChart');
+            gyroChart = new Chart(gyroCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'X-axis',
+                            data: [],
+                            borderColor: '#ed8936',
+                            backgroundColor: 'rgba(237, 137, 54, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Y-axis',
+                            data: [],
+                            borderColor: '#9f7aea',
+                            backgroundColor: 'rgba(159, 122, 234, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Z-axis',
+                            data: [],
+                            borderColor: '#38b2ac',
+                            backgroundColor: 'rgba(56, 178, 172, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
